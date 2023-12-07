@@ -64,7 +64,7 @@ internal static class DbContextBulkTransactionSaveChanges
         // Topoligicaly sort delete operations by reverse FK
         var deleted = entriesGroupedByEntity.Where(x => x.State == EntityState.Deleted);
         var deletedLookup = deleted.ToLookup(x => x.EntityType);
-        var sortedDeleted = deleted.OrderTopologicallyBy(g => getFks(g.EntityType).SelectMany(x => deletedLookup[x]).Reverse());
+        var sortedDeleted = deleted.OrderTopologicallyBy(g => getFks(g.EntityType).SelectMany(x => deletedLookup[x])).Reverse();
 
         var sortedGroups = sortedAdded
             .Concat(entriesGroupedByEntity.Where(x => x.State == EntityState.Modified))
