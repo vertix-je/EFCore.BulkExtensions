@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace EFCore.BulkExtensions;
 
@@ -81,16 +82,11 @@ internal static class DbContextBulkTransactionSaveChanges
         }
         var connection = context.GetUnderlyingConnection(bulkConfig);
 
-        bool doExplicitCommit = false;
-        if (context.Database.CurrentTransaction == null)
-        {
-            doExplicitCommit = true;
-        }
+        var hasExistingTransaction = context.Database.CurrentTransaction != null || Transaction.Current != null;
+        var transaction = hasExistingTransaction ? null : context.Database.CurrentTransaction ?? context.Database.BeginTransaction();
 
         try
         {
-
-            var transaction = context.Database.CurrentTransaction ?? context.Database.BeginTransaction();
 
             if (option == 1)
             {
@@ -197,15 +193,15 @@ internal static class DbContextBulkTransactionSaveChanges
                     }
                 }
             }
-            if (doExplicitCommit)
+            if (!hasExistingTransaction)
             {
-                transaction.Commit();
+                transaction!.Commit();
                 context.ChangeTracker.AcceptAllChanges();
             }
         }
         finally
         {
-            if (doExplicitCommit)
+            if (!hasExistingTransaction)
             {
 
                 if (isAsync)
